@@ -14,15 +14,20 @@ public class OcrService(HttpClient httpClient, IConfiguration config, Applicatio
     public async Task<string> BackSideProcessing(IFormFile file)
     {
         using var form = new MultipartFormDataContent();
+        
+        // Resize image to max dimension
         await using var resizedStream = await ImageProcessor.ResizeToMaxDimension(file);
+        
         using var content = new StreamContent(resizedStream);
         content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
         form.Add(content, "file", "document.jpg");
 
+        // Check internal token for OCR service access
         var token = config["OcrService:InternalToken"];
         if (!string.IsNullOrEmpty(token))
             form.Headers.Add("X-Internal-Token", token);
-
+        
+        // Forward the image to the python FastAPI OCR microservice
         var response = await httpClient.PostAsync("/ocr", form);
 
         if (!response.IsSuccessStatusCode)
@@ -33,25 +38,31 @@ public class OcrService(HttpClient httpClient, IConfiguration config, Applicatio
         if (result is null)
             throw new Exception("OCR service returned empty response");
 
+        // Filter and clean lines that belong to the MRZ
         var mrzLines = result.Items
             .Where(x => x.Text.Contains('<'))
             .Select(x => x.Text.Replace(" ", "").ToUpper())
             .ToArray();
 
+        // Combine lines back into a single text block separated by newlines
         var resultString = string.Join("\n", mrzLines);
 
+        // Parse raw MRZ text into a structured object
         var code = MrzCode.Parse(resultString);
 
+        // Automatically detect the specific MRZ format (e.g., TD1, TD2, TD3/Passport)
         var format = MrzFormatDetector.DetectFormat(mrzLines);
 
         if (format == MrzFormat.Unknown)
             throw new Exception($"Unsupported MRZ format. Raw MRZ: {resultString}");
 
+        // Extract the unique document number
         var documentNumber = MrzFormatDetector.ExtractDocumentNumber(format, mrzLines);
 
         if (string.IsNullOrWhiteSpace(documentNumber))
             throw new Exception("Document number could not be extracted");
         
+        // Validate the document number checksum
         string documentNumberCheckDigit;
         try
         {
@@ -106,8 +117,6 @@ public class OcrService(HttpClient httpClient, IConfiguration config, Applicatio
 
             context.Documents.Add(parseResult);
             await context.SaveChangesAsync();
-
-            return documentNumber;
         }
 
         return "Document number already exists";
