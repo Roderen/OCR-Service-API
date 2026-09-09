@@ -12,6 +12,8 @@ The system provides:
 
 The .NET API acts as the main orchestrator, while OCR and face recognition run as separate services.
 
+You can get a synthetic documents [here](https://github.com/Roderen/Synthetic-Documents) to test.
+
 > Face matching alone is not sufficient to verify document authenticity. In production, this is typically handled by specialized third-party **document verification / identity verification providers** that offer **document authenticity checks, tampering detection, NFC verification, and liveness detection**. Due to limited resources, I decided not to implement the full document verification process from scratch.
 
 
