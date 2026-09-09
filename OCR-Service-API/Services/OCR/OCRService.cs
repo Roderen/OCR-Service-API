@@ -50,6 +50,14 @@ public class OcrService(HttpClient httpClient, IConfiguration config, Applicatio
         // Parse raw MRZ text into a structured object
         var code = MrzCode.Parse(resultString);
 
+        // Validate the document expiry date
+        if (
+            DateOnly.ParseExact(code[FieldType.ExpiryDate], "yyMMdd", CultureInfo.InvariantCulture) < DateOnly.FromDateTime(DateTime.Today)
+            )
+        {
+            throw new Exception("Document has expired");
+        }
+
         // Automatically detect the specific MRZ format (e.g., TD1, TD2, TD3/Passport)
         var format = MrzFormatDetector.DetectFormat(mrzLines);
 
