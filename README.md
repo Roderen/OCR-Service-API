@@ -14,6 +14,12 @@ The .NET API acts as the main orchestrator, while OCR and face recognition run a
 
 You can get a synthetic documents [here](https://github.com/Roderen/Synthetic-Documents) to test.
 
+Also, you have to get a [sixlabors.lic](https://licensing.sixlabors.com/) file and put it in this path - `OCR-Service-API/OCR-Service-API/sixlabors.lic` (near the file OCR-Service-API.csproj).
+After that:
+- generate ENCRYPTION_KEY (base64 32 bytes)
+- AWS keys if you gonna try to use face recognition
+- run `docker-compose up --build`
+
 > Face matching alone is not sufficient to verify document authenticity. In production, this is typically handled by specialized third-party **document verification / identity verification providers** that offer **document authenticity checks, tampering detection, NFC verification, and liveness detection**. Due to limited resources, I decided not to implement the full document verification process from scratch.
 
 
